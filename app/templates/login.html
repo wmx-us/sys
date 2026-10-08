@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="login-card">
+  <div class="login-intro">
+    <span class="eyebrow">科研项目全生命周期管理</span>
+    <h1>让项目进展清晰可见</h1>
+    <p>从项目申报、立项审批到经费、成果与验收，在一个工作台中完成协作。</p>
+    <div class="flow-preview">
+      <span>申报</span><i>→</i><span>立项</span><i>→</i><span>执行</span><i>→</i><span>验收</span>
+    </div>
+  </div>
+  <div class="login-form-wrap">
+    <div class="brand login-brand"><span class="brand-mark">科</span><span>{{ app_name }}</span></div>
+    <h2>登录工作台</h2>
+    <p class="muted">请选择演示账号，三类角色拥有不同权限。</p>
+    <form action="/login" method="post" class="form-stack">
+      <input type="hidden" name="csrf" value="{{ csrf_token }}">
+      <label>用户名
+        <input name="username" autocomplete="username" required autofocus placeholder="researcher">
+      </label>
+      <label>密码
+        <input name="password" type="password" autocomplete="current-password" required value="{{ demo_password }}">
+      </label>
+      <button class="button primary full" type="submit">登录</button>
+    </form>
+    <div class="demo-accounts">
+      <p>演示账号（密码均为 <code>{{ demo_password }}</code>）</p>
+      <button type="button" data-user="researcher">科研人员</button>
+      <button type="button" data-user="admin">科研管理员</button>
+      <button type="button" data-user="finance">财务人员</button>
+    </div>
+  </div>
+</section>
+<script>
+  document.querySelectorAll('[data-user]').forEach((button) => {
+    button.addEventListener('click', () => {
+      document.querySelector('[name=username]').value = button.dataset.user;
+      document.querySelector('[name=password]').value = '{{ demo_password }}';
+    });
+  });
+</script>
+{% endblock %}

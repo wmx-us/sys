@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">财务审核</span><h1>经费中心</h1><p>核验项目支出，确保预算执行合规。</p></div></div>
+<section class="panel">
+  <div class="panel-heading"><div><h2>支出记录</h2><p>待审核记录优先显示</p></div></div>
+  {% if expenses %}<div class="finance-list">{% for item in expenses %}<article class="finance-item"><div class="finance-main"><div><span class="badge expense-{{ item.status.value|lower }}">{{ expense_status_labels[item.status] }}</span><h3>{{ item.category }} · ¥ {{ '%.2f'|format(item.amount) }}</h3><a href="/projects/{{ item.project.id }}">{{ item.project.name }}</a></div><dl><div><dt>申请人</dt><dd>{{ item.applicant.display_name }}</dd></div><div><dt>支出日期</dt><dd>{{ item.expense_date }}</dd></div><div><dt>用途</dt><dd>{{ item.description }}</dd></div></dl></div>{% if item.status.value == 'PENDING' %}<form action="/expenses/{{ item.id }}/review" method="post" class="finance-review"><input type="hidden" name="csrf" value="{{ csrf_token }}"><input name="comment" required placeholder="填写审核意见"><button class="button danger small" name="decision" value="REJECTED" type="submit">驳回</button><button class="button primary small" name="decision" value="APPROVED" type="submit">通过</button></form>{% else %}<p class="reviewed-note">审核意见：{{ item.review_comment or '—' }}</p>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty"><p>暂无支出记录</p></div>{% endif %}
+</section>
+{% endblock %}

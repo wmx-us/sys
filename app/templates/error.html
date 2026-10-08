@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="error-page"><span>{{ status_code or '!' }}</span><h1>{{ title }}</h1><p>{{ error or '请求无法完成' }}</p><a class="button primary" href="{% if current_user %}/dashboard{% else %}/login{% endif %}">返回安全页面</a></section>
+{% endblock %}

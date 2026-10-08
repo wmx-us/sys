@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading narrow-heading">
+  <div><a class="back-link" href="{% if project %}/projects/{{ project.id }}{% else %}/projects{% endif %}">← 返回</a><h1>{{ title }}</h1><p>请完整填写项目基本信息，带 * 的字段为必填项。</p></div>
+</div>
+<section class="panel form-panel">
+  {% set data = form_data or {} %}
+  <form action="{{ form_action }}" method="post" class="form-grid">
+    <input type="hidden" name="csrf" value="{{ csrf_token }}">
+    <label class="span-2">项目名称 *
+      <input name="name" required minlength="2" maxlength="200" value="{{ data.get('name', project.name if project else '') }}" placeholder="例如：科研知识图谱关键技术研究">
+    </label>
+    <label>开始日期 *
+      <input type="date" name="start_date" required value="{{ data.get('start_date', project.start_date if project else '') }}">
+    </label>
+    <label>计划结束日期 *
+      <input type="date" name="end_date" required value="{{ data.get('end_date', project.end_date if project else '') }}">
+    </label>
+    <label class="span-2">项目预算（元） *
+      <input type="number" name="budget_amount" min="0.01" step="0.01" required value="{{ data.get('budget_amount', project.budget_amount if project else '') }}" placeholder="300000.00">
+      <small>预算提交立项后不可由项目负责人直接修改。</small>
+    </label>
+    <label class="span-2">项目摘要 *
+      <textarea name="summary" required minlength="10" rows="7" placeholder="说明研究背景、目标、研究内容与预期价值。">{{ data.get('summary', project.summary if project else '') }}</textarea>
+    </label>
+    <div class="form-actions span-2"><a class="button ghost" href="{% if project %}/projects/{{ project.id }}{% else %}/projects{% endif %}">取消</a><button class="button primary" type="submit">保存项目</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="project-hero">
+  <div>
+    <a class="back-link" href="/projects">← 返回项目列表</a>
+    <div class="title-line"><h1>{{ project.name }}</h1><span class="badge status-{{ project.status.value|lower }}">{{ status_labels[project.status] }}</span></div>
+    <p>{{ project.code or '尚未生成项目编号' }} · 负责人 {{ project.owner.display_name }}</p>
+  </div>
+  <div class="hero-actions">
+    {% if current_user.id == project.owner_id and project.status.value in ['DRAFT', 'REJECTED'] %}
+    <a class="button secondary" href="/projects/{{ project.id }}/edit">编辑申报</a>
+    <form action="/projects/{{ project.id }}/submit" method="post" data-confirm="确认提交立项审批？提交后将暂时无法修改。"><input type="hidden" name="csrf" value="{{ csrf_token }}"><button class="button primary" type="submit">提交立项</button></form>
+    {% endif %}
+  </div>
+</div>
+
+{% if project.rejection_reason %}<div class="callout warning"><strong>当前驳回意见</strong><p>{{ project.rejection_reason }}</p></div>{% endif %}
+
+<nav class="anchor-nav" aria-label="项目详情导航">
+  <a href="#overview">项目概览</a><a href="#progress">进度</a><a href="#expenses">经费</a><a href="#achievements">成果</a><a href="#acceptance">验收与日志</a>
+</nav>
+
+<section id="overview" class="detail-grid">
+  <article class="panel span-2">
+    <div class="panel-heading"><div><h2>项目概览</h2><p>申报信息和研究目标</p></div></div>
+    <p class="summary-text">{{ project.summary }}</p>
+    <dl class="meta-grid"><div><dt>项目周期</dt><dd>{{ project.start_date }} 至 {{ project.end_date }}</dd></div><div><dt>项目负责人</dt><dd>{{ project.owner.display_name }}</dd></div><div><dt>项目编号</dt><dd>{{ project.code or '审批通过后生成' }}</dd></div><div><dt>当前版本</dt><dd>v{{ project.version }}</dd></div></dl>
+  </article>
+  <aside class="panel budget-card">
+    <div class="panel-heading"><div><h2>预算执行</h2><p>仅统计已审核支出</p></div></div>
+    <strong class="big-money">¥ {{ '%.2f'|format(approved_total) }}</strong><span>已使用 / ¥ {{ '%.2f'|format(project.budget_amount) }}</span>
+    <div class="progress-bar"><i style="width: {{ [((approved_total / project.budget_amount) * 100)|float, 100]|min }}%"></i></div>
+    <dl class="budget-meta"><div><dt>剩余预算</dt><dd>¥ {{ '%.2f'|format(remaining_budget) }}</dd></div><div><dt>支出记录</dt><dd>{{ project.expenses|length }} 笔</dd></div></dl>
+  </aside>
+</section>
+
+{% if current_user.role.value == 'ADMIN' and project.status.value == 'PENDING_APPROVAL' %}
+<section class="panel action-panel">
+  <div class="panel-heading"><div><h2>立项审批</h2><p>核对申报内容后给出审批结论。</p></div></div>
+  <form action="/projects/{{ project.id }}/review-initiation" method="post" class="review-form"><input type="hidden" name="csrf" value="{{ csrf_token }}"><label>审批意见<textarea name="comment" required rows="3" placeholder="请填写明确的审批依据和意见"></textarea></label><div><button class="button danger" name="decision" value="REJECTED" type="submit">驳回修改</button><button class="button primary" name="decision" value="APPROVED" type="submit">批准立项</button></div></form>
+</section>
+{% endif %}
+
+<section id="progress" class="panel section-panel">
+  <div class="panel-heading"><div><h2>项目进度</h2><p>阶段性工作、风险与下一步计划</p></div><span class="count">{{ project.progress_reports|length }} 条</span></div>
+  {% if current_user.id == project.owner_id and project.status.value == 'ACTIVE' %}
+  <details class="inline-form"><summary>＋ 填报项目进展</summary><form action="/projects/{{ project.id }}/progress" method="post" class="form-grid"><input type="hidden" name="csrf" value="{{ csrf_token }}"><label>完成比例（%）<input type="number" name="completion_percentage" min="0" max="100" required></label><label>填报日期<input type="date" name="report_date" value="{{ today }}" required></label><label class="span-2">本期工作总结<textarea name="work_summary" rows="3" required></textarea></label><label>风险与问题<textarea name="risks" rows="3"></textarea></label><label>下一步计划<textarea name="next_plan" rows="3"></textarea></label><div class="form-actions span-2"><button class="button primary" type="submit">保存进展</button></div></form></details>
+  {% endif %}
+  {% if project.progress_reports %}<div class="report-list">{% for report in project.progress_reports %}<article><div class="report-percent"><strong>{{ report.completion_percentage }}%</strong><span>{{ report.report_date }}</span></div><div><h3>{{ report.work_summary }}</h3>{% if report.risks %}<p><b>风险：</b>{{ report.risks }}</p>{% endif %}{% if report.next_plan %}<p><b>下一步：</b>{{ report.next_plan }}</p>{% endif %}</div></article>{% endfor %}</div>{% else %}<div class="empty small-empty"><p>尚未填报项目进度</p></div>{% endif %}
+</section>
+
+<section id="expenses" class="panel section-panel">
+  <div class="panel-heading"><div><h2>经费支出</h2><p>支出提交后由财务人员审核</p></div><span class="count">{{ project.expenses|length }} 笔</span></div>
+  {% if current_user.id == project.owner_id and project.status.value == 'ACTIVE' %}
+  <details class="inline-form"><summary>＋ 登记经费支出</summary><form action="/projects/{{ project.id }}/expenses" method="post" class="form-grid"><input type="hidden" name="csrf" value="{{ csrf_token }}"><label>支出类别<input name="category" required placeholder="设备费 / 材料费 / 会议费"></label><label>金额（元）<input type="number" name="amount" min="0.01" step="0.01" required></label><label>支出日期<input type="date" name="expense_date" value="{{ today }}" required></label><label>用途说明<input name="description" required></label><div class="form-actions span-2"><button class="button primary" type="submit">提交财务审核</button></div></form></details>
+  {% endif %}
+  {% if project.expenses %}<div class="table-wrap"><table><thead><tr><th>类别 / 用途</th><th>日期</th><th>金额</th><th>状态</th></tr></thead><tbody>{% for item in project.expenses %}<tr><td><strong>{{ item.category }}</strong><small>{{ item.description }}</small></td><td>{{ item.expense_date }}</td><td>¥ {{ '%.2f'|format(item.amount) }}</td><td><span class="badge expense-{{ item.status.value|lower }}">{{ expense_status_labels[item.status] }}</span>{% if item.review_comment %}<small>{{ item.review_comment }}</small>{% endif %}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty small-empty"><p>尚无支出记录</p></div>{% endif %}
+</section>
+
+<section id="achievements" class="panel section-panel">
+  <div class="panel-heading"><div><h2>项目成果</h2><p>论文、专利、软件和研究报告</p></div><span class="count">{{ project.achievements|length }} 项</span></div>
+  {% if current_user.id == project.owner_id and project.status.value == 'ACTIVE' %}
+  <details class="inline-form"><summary>＋ 登记项目成果</summary><form action="/projects/{{ project.id }}/achievements" method="post" class="form-grid"><input type="hidden" name="csrf" value="{{ csrf_token }}"><label>成果类型<select name="achievement_type">{% for item in achievement_types %}<option value="{{ item.value }}">{{ achievement_labels[item] }}</option>{% endfor %}</select></label><label>成果名称<input name="title" required></label><label class="span-2">成果说明<textarea name="description" rows="3"></textarea></label><label class="span-2">参考链接<input type="url" name="reference_url" placeholder="https://"></label><div class="form-actions span-2"><button class="button primary" type="submit">保存成果</button></div></form></details>
+  {% endif %}
+  {% if project.achievements %}<div class="achievement-grid">{% for item in project.achievements %}<article><span class="type-chip">{{ achievement_labels[item.type] }}</span><h3>{{ item.title }}</h3><p>{{ item.description or '暂无说明' }}</p>{% if item.reference_url %}<a href="{{ item.reference_url }}" target="_blank" rel="noopener">查看链接 ↗</a>{% endif %}</article>{% endfor %}</div>{% else %}<div class="empty small-empty"><p>尚未登记项目成果</p></div>{% endif %}
+</section>
+
+<section id="acceptance" class="two-column detail-bottom">
+  <article class="panel">
+    <div class="panel-heading"><div><h2>项目验收</h2><p>验收总结与审批记录</p></div></div>
+    {% if current_user.id == project.owner_id and project.status.value in ['ACTIVE', 'ACCEPTANCE_REJECTED'] %}
+    <form action="/projects/{{ project.id }}/acceptance" method="post" class="form-stack" data-confirm="确认提交验收？"><input type="hidden" name="csrf" value="{{ csrf_token }}"><label>验收总结<textarea name="summary" minlength="20" rows="6" required placeholder="总结项目目标完成情况、成果和经费执行情况（至少 20 个字符）"></textarea></label><button class="button primary" type="submit">提交验收</button></form>
+    {% elif project.acceptance_submissions %}<div class="acceptance-summary"><span>第 {{ project.acceptance_submissions[0].version }} 次提交</span><p>{{ project.acceptance_submissions[0].summary }}</p></div>{% else %}<div class="empty small-empty"><p>尚未提交验收</p></div>{% endif %}
+    {% if current_user.role.value == 'ADMIN' and project.status.value == 'PENDING_ACCEPTANCE' %}
+    <form action="/projects/{{ project.id }}/review-acceptance" method="post" class="review-form top-space"><input type="hidden" name="csrf" value="{{ csrf_token }}"><label>验收意见<textarea name="comment" required rows="3"></textarea></label><div><button class="button danger" name="decision" value="REJECTED" type="submit">验收驳回</button><button class="button primary" name="decision" value="APPROVED" type="submit">验收通过</button></div></form>
+    {% endif %}
+  </article>
+  <article class="panel">
+    <div class="panel-heading"><div><h2>生命周期日志</h2><p>关键操作留痕</p></div></div>
+    {% if audit_logs %}<ol class="timeline scroll-timeline">{% for log in audit_logs %}<li><span class="timeline-dot"></span><div><strong>{{ log.action }}</strong><p>{{ log.actor.display_name }}</p><time>{{ log.created_at.strftime('%Y-%m-%d %H:%M') }}</time></div></li>{% endfor %}</ol>{% else %}<div class="empty small-empty"><p>暂无日志</p></div>{% endif %}
+  </article>
+</section>
+{% endblock %}

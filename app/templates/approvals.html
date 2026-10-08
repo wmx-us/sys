@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading"><div><span class="eyebrow">科研管理</span><h1>审批中心</h1><p>集中处理待立项和待验收项目。</p></div></div>
+<section class="panel">
+  <div class="panel-heading"><div><h2>待办审批</h2><p>共 {{ projects|length }} 个项目等待处理</p></div></div>
+  {% if projects %}<div class="approval-grid">{% for project in projects %}<a href="/projects/{{ project.id }}"><div><span class="badge status-{{ project.status.value|lower }}">{{ status_labels[project.status] }}</span><h3>{{ project.name }}</h3><p>{{ project.owner.display_name }} · 预算 ¥ {{ '%.2f'|format(project.budget_amount) }}</p></div><span class="approval-arrow">→</span></a>{% endfor %}</div>{% else %}<div class="empty"><p>所有审批均已处理</p><span>当前没有待办项目。</span></div>{% endif %}
+</section>
+{% endblock %}

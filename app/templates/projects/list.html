@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading">
+  <div><span class="eyebrow">项目全景</span><h1>项目管理</h1><p>查看项目状态、负责人和预算信息。</p></div>
+  {% if current_user.role.value == 'RESEARCHER' %}<a class="button primary" href="/projects/new">＋ 新建项目</a>{% endif %}
+</div>
+<section class="panel">
+  <form class="filters" action="/projects" method="get">
+    <label class="search"><span>⌕</span><input name="q" value="{{ q }}" placeholder="搜索项目名称或编号"></label>
+    <select name="project_status" aria-label="项目状态">
+      <option value="">全部状态</option>
+      {% for item in statuses %}<option value="{{ item.value }}" {% if selected_status == item.value %}selected{% endif %}>{{ status_labels[item] }}</option>{% endfor %}
+    </select>
+    <button class="button secondary" type="submit">筛选</button>
+    {% if q or selected_status %}<a class="button ghost" href="/projects">清除</a>{% endif %}
+  </form>
+  {% if projects %}
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>项目</th><th>负责人</th><th>周期</th><th>预算</th><th>状态</th><th></th></tr></thead>
+      <tbody>
+      {% for project in projects %}
+      <tr>
+        <td><strong>{{ project.name }}</strong><small>{{ project.code or '未生成项目编号' }}</small></td>
+        <td>{{ project.owner.display_name }}</td>
+        <td>{{ project.start_date }}<small>至 {{ project.end_date }}</small></td>
+        <td>¥ {{ '%.2f'|format(project.budget_amount) }}</td>
+        <td><span class="badge status-{{ project.status.value|lower }}">{{ status_labels[project.status] }}</span></td>
+        <td><a class="row-link" href="/projects/{{ project.id }}">查看 →</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}<div class="empty"><p>没有符合条件的项目</p><span>调整筛选条件或创建一个新项目。</span></div>{% endif %}
+</section>
+{% endblock %}

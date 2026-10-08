@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-heading">
+  <div>
+    <span class="eyebrow">{{ role_labels[current_user.role] }}工作台</span>
+    <h1>你好，{{ current_user.display_name }}</h1>
+    <p>今天需要关注的科研项目与业务进展都在这里。</p>
+  </div>
+  {% if current_user.role.value == 'RESEARCHER' %}
+  <a class="button primary" href="/projects/new">＋ 新建项目</a>
+  {% elif current_user.role.value == 'ADMIN' %}
+  <a class="button primary" href="/approvals">处理审批</a>
+  {% else %}
+  <a class="button primary" href="/finance">处理经费</a>
+  {% endif %}
+</div>
+
+<section class="stats-grid">
+  <article class="stat-card accent-blue"><span>可见项目</span><strong>{{ project_count }}</strong><small>当前权限范围</small></article>
+  <article class="stat-card accent-orange"><span>待处理事项</span><strong>{{ todo_count }}</strong><small>需要你的关注</small></article>
+  <article class="stat-card accent-green"><span>执行中</span><strong>{{ active_count }}</strong><small>正在推进的项目</small></article>
+  <article class="stat-card accent-purple"><span>已结项</span><strong>{{ completed_count }}</strong><small>完成验收的项目</small></article>
+</section>
+
+<div class="two-column">
+  <section class="panel">
+    <div class="panel-heading"><div><h2>最近项目</h2><p>按更新时间排序</p></div><a href="/projects">查看全部 →</a></div>
+    {% if projects %}
+    <div class="project-list compact">
+      {% for project in projects %}
+      <a class="project-row" href="/projects/{{ project.id }}">
+        <span class="project-icon">{{ project.name[0] }}</span>
+        <span class="project-main"><strong>{{ project.name }}</strong><small>{{ project.code or '尚未立项' }}</small></span>
+        <span class="badge status-{{ project.status.value|lower }}">{{ status_labels[project.status] }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}<div class="empty"><p>暂时没有项目</p><span>创建或获批项目后会显示在这里。</span></div>{% endif %}
+  </section>
+  <section class="panel">
+    <div class="panel-heading"><div><h2>最近动态</h2><p>关键业务操作记录</p></div></div>
+    {% if recent_logs %}
+    <ol class="timeline">
+      {% for log in recent_logs %}
+      <li><span class="timeline-dot"></span><div><strong>{{ log.actor.display_name }}</strong> · {{ log.action }}<p>{{ log.project.name if log.project else log.entity_type }}</p><time>{{ log.created_at.strftime('%m-%d %H:%M') }}</time></div></li>
+      {% endfor %}
+    </ol>
+    {% else %}<div class="empty"><p>暂无动态</p></div>{% endif %}
+  </section>
+</div>
+{% endblock %}
